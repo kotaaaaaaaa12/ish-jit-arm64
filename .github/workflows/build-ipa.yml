@@ -1,0 +1,39 @@
+name: Build iSH ARM64 for SideStore
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Install deps
+        run: |
+          brew install ninja lld llvm meson
+
+      # Xcodeで未署名のIPAをビルドする
+      - name: Build Unsigned App
+        run: |
+          xcodebuild -project iSH.xcodeproj -scheme 'iSH-ARM64' -configuration Release \
+            -destination 'generic/platform=iOS' \
+            build CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' EXPANDED_CODE_SIGN_IDENTITY=''
+
+      # IPAパッケージ（Zip）化する
+      - name: Package IPA
+        run: |
+          mkdir -p payload/Payload
+          cp -R build/Release-iphoneos/iSH.app payload/Payload/
+          cd payload
+          zip -r ../iSH-ARM64-Unsigned.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iSH-ARM64-SideStore-IPA
+          path: iSH-ARM64-Unsigned.ipa
