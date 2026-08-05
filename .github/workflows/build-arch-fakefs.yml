@@ -1,0 +1,44 @@
+name: Prepare Arch Linux FakeFS
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y meson ninja-build libarchive-dev clang lld
+
+      - name: Build fakefsify tool
+        run: |
+          meson setup build
+          ninja -C build
+
+      - name: Download Arch Linux ARM rootfs
+        run: |
+          wget http://os.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz -O arch-rootfs.tar.gz
+
+      - name: Run fakefsify
+        run: |
+          mkdir -p arch-fakefs
+          # mesonのビルドディレクトリに出力されたfakefsifyを使って変換
+          ./build/tools/fakefsify arch-rootfs.tar.gz arch-fakefs/
+
+      - name: Zip the FakeFS
+        run: |
+          cd arch-fakefs
+          zip -r ../ArchLinux-FakeFS.zip .
+
+      - name: Upload Arch FakeFS Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ArchLinux-FakeFS
+          path: ArchLinux-FakeFS.zip
