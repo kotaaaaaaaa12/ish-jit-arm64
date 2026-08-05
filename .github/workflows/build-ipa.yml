@@ -13,24 +13,34 @@ jobs:
           submodules: true
           fetch-depth: 0
 
-      # ldid を追加！
       - name: Install deps
         run: |
-          brew install ninja lld llvm meson coreutils ldid
+          brew install ninja lld llvm meson ldid
 
-      - name: Grant execution rights
+      # エラーの原因になるFileProviderを無視して、本体（iSH-ARM64）だけを直接ビルド！
+      - name: Build iSH ARM64 App
         run: |
-          chmod +x tools/package_arm64_trollstore_ipa.sh
+          xcodebuild -project iSH.xcodeproj \
+            -scheme 'iSH-ARM64' \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build/DerivedData \
+            build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            EXPANDED_CODE_SIGN_IDENTITY=''
 
-      # 公式のTIPAビルドスクリプトを実行して成果物を作る
-      - name: Build TIPA with script
+      # ビルドされた .app を探して手動でIPA（Zip）にパッケージ化
+      - name: Package IPA
         run: |
-          ./tools/package_arm64_trollstore_ipa.sh
-
-      # .tipa を .ipa にコピーしてSideStoreが認識できるようにする
-      - name: Prepare IPA for SideStore
-        run: |
-          cp build/iSH-ARM64-JIT-TrollStore.tipa iSH-ARM64-SideStore.ipa
+          mkdir -p payload/Payload
+          # DerivedDataの奥底からビルドされた .app フォルダを自動で探して持ってくる
+          APP_PATH=$(find build/DerivedData -name "*.app" -type d | head -n 1)
+          echo "Found app at: $APP_PATH"
+          cp -R "$APP_PATH" payload/Payload/
+          cd payload
+          zip -r ../iSH-ARM64-SideStore.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
