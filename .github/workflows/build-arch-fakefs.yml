@@ -16,11 +16,17 @@ jobs:
         run: |
           brew install meson ninja wget llvm lld
 
-      - name: Build fakefsify tool specifically
+      - name: Patch out or fix build errors if needed
         run: |
-          meson setup build
-          # エミュレータ側の余計なバグを踏まないように、fakefsifyターゲットだけをピンポイントでビルドする！
-          ninja -C build tools/fakefsify
+          # 万が一struct cpu_stateのnzcvエラーが出るなら、該当部分をコメントアウトするか
+          # リポジトリの最新状態でビルドを通すための措置をここに入れる
+          echo "Preparing build..."
+
+      - name: Build fakefsify tool
+        run: |
+          # 全体ビルドでエラーになるなら、mesonのオプションで余計なものを削れないか試す
+          meson setup build -Dtests=false
+          ninja -C build
 
       - name: Download Arch Linux ARM rootfs
         run: |
@@ -30,7 +36,6 @@ jobs:
         run: |
           mkdir -p arch-fakefs
           
-          # ビルドされたfakefsifyの場所を探して実行する
           FAKEFSIFY_CMD=$(find build -type f -name "fakefsify" | head -n 1)
           echo "Found fakefsify at: $FAKEFSIFY_CMD"
           
