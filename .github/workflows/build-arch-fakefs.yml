@@ -14,13 +14,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # llvmとlldを復活！これで文句言わせへんぞ！
           brew install meson ninja wget llvm lld
 
-      - name: Build fakefsify tool
+      - name: Build fakefsify tool specifically
         run: |
           meson setup build
-          ninja -C build
+          # エミュレータ側の余計なバグを踏まないように、fakefsifyターゲットだけをピンポイントでビルドする！
+          ninja -C build tools/fakefsify
 
       - name: Download Arch Linux ARM rootfs
         run: |
@@ -30,6 +30,7 @@ jobs:
         run: |
           mkdir -p arch-fakefs
           
+          # ビルドされたfakefsifyの場所を探して実行する
           FAKEFSIFY_CMD=$(find build -type f -name "fakefsify" | head -n 1)
           echo "Found fakefsify at: $FAKEFSIFY_CMD"
           
