@@ -13,9 +13,10 @@ jobs:
           submodules: true
           fetch-depth: 0
 
+      # coreutils（timeoutコマンド用）を追加！
       - name: Install deps
         run: |
-          brew install ninja lld llvm meson
+          brew install ninja lld llvm meson coreutils
 
       - name: Grant execution rights
         run: |
