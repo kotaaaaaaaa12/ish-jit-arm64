@@ -14,11 +14,12 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y meson ninja-build libarchive-dev clang lld
+          # Macやから apt-get やなくて brew を使うんや！
+          brew install meson ninja wget
 
       - name: Build fakefsify tool
         run: |
+          # iSHのツール群をビルドする
           meson setup build
           ninja -C build
 
@@ -29,8 +30,13 @@ jobs:
       - name: Run fakefsify
         run: |
           mkdir -p arch-fakefs
-          # mesonのビルドディレクトリに出力されたfakefsifyを使って変換
-          ./build/tools/fakefsify arch-rootfs.tar.gz arch-fakefs/
+          
+          # ビルドされたfakefsifyの場所を自動で探して実行する（念のための対策）
+          FAKEFSIFY_CMD=$(find build -type f -name "fakefsify" | head -n 1)
+          echo "Found fakefsify at: $FAKEFSIFY_CMD"
+          
+          # 変換実行！
+          $FAKEFSIFY_CMD arch-rootfs.tar.gz arch-fakefs/
 
       - name: Zip the FakeFS
         run: |
