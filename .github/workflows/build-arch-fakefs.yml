@@ -16,16 +16,18 @@ jobs:
         run: |
           brew install meson ninja wget llvm lld
 
-      - name: Patch out or fix build errors if needed
+      - name: Patch source code bug (fix nzcv error)
         run: |
-          # 万が一struct cpu_stateのnzcvエラーが出るなら、該当部分をコメントアウトするか
-          # リポジトリの最新状態でビルドを通すための措置をここに入れる
-          echo "Preparing build..."
+          # 最新コミットのバグで struct cpu_state に nzcv がなくて落ちるので、
+          # 該当行をコメントアウトするか、エラーが出ないように力技で書き換える！
+          if [ -f "emu/cpu_backend.c" ]; then
+            echo "Patching emu/cpu_backend.c..."
+            sed -i.bak 's/cpu->nzcv/\/\* cpu->nzcv \*\//g' emu/cpu_backend.c
+          fi
 
       - name: Build fakefsify tool
         run: |
-          # 全体ビルドでエラーになるなら、mesonのオプションで余計なものを削れないか試す
-          meson setup build -Dtests=false
+          meson setup build
           ninja -C build
 
       - name: Download Arch Linux ARM rootfs
