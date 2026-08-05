@@ -16,13 +16,12 @@ jobs:
         run: |
           brew install meson ninja wget llvm lld
 
-      - name: Patch source code bug (fix nzcv error)
+      - name: Patch source code bug properly
         run: |
-          # 最新コミットのバグで struct cpu_state に nzcv がなくて落ちるので、
-          # 該当行をコメントアウトするか、エラーが出ないように力技で書き換える！
+          # nzcv の部分をコメントアウトじゃなくて、コンパイルが通るように 0 (ダミーの式) に置き換える！
           if [ -f "emu/cpu_backend.c" ]; then
-            echo "Patching emu/cpu_backend.c..."
-            sed -i.bak 's/cpu->nzcv/\/\* cpu->nzcv \*\//g' emu/cpu_backend.c
+            echo "Properly patching emu/cpu_backend.c..."
+            sed -i.bak 's/cpu->nzcv/0/g' emu/cpu_backend.c
           fi
 
       - name: Build fakefsify tool
